@@ -1,0 +1,190 @@
+/**
+ * @file ssd1289_port.c
+ * @author kubanec
+ * @date 18.7.2012
+ *
+ * @brief ssd1289 low level port for stm32f407, this port uses FSMC for data writing to display
+ *
+ */
+
+/*
+ * How to connect LCD with STM32F4Discovery:
+ *
+ * RS    ->  PD11
+ * WR    ->  PD5
+ * RD    ->  PD4
+ * CS    ->  PD7
+ * RESET ->  PC6
+ *
+ * DB0   ->  PD14
+ * DB1   ->  PD15
+ * DB2   ->  PD0
+ * DB3   ->  PD1
+ * DB4   ->  PE7
+ * DB5   ->  PE8
+ * DB6   ->  PE9
+ * DB7   ->  PE10
+ * DB8   ->  PE11
+ * DB9   ->  PE12
+ * DB10  ->  PE13
+ * DB11  ->  PE14
+ * DB12  ->  PE15
+ * DB13  ->  PD8
+ * DB14  ->  PD9
+ * DB15  ->  PD10
+ */
+
+#include "ssd1289_port.h"
+
+
+static void Init_GPIO(void);
+static void Init_FSMC(void);
+
+void ssd1289_low_level_output_address(uint16_t address)
+{
+	LCD->Register = address;
+}
+
+void ssd1289_low_level_output_data(uint16_t data)
+{
+	LCD->Data = data;
+}
+
+void ssd1289_low_level_init(void)
+{
+	Init_GPIO();
+	Init_FSMC();
+}
+
+/*
+ * Initialize GPIO ports D and E for FSMC use.
+ * Also initialize PC6 for RESET.
+ * RS will be on A16.
+ */
+static void Init_GPIO(void)
+{
+	GPIO_InitTypeDef init =
+	{ 0 };
+
+	RCC_AHB1PeriphClockCmd(
+			RCC_AHB1Periph_GPIOD | RCC_AHB1Periph_GPIOE | RCC_AHB1Periph_GPIOC,
+			ENABLE);
+
+	/* RESET */
+
+	init.GPIO_Pin = GPIO_Pin_6;
+	init.GPIO_Mode = GPIO_Mode_OUT;
+	init.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOC, &init);
+
+	/* PORTD */
+
+	init.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_4 | GPIO_Pin_5
+			| GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11
+			| GPIO_Pin_14 | GPIO_Pin_15;
+	init.GPIO_Mode = GPIO_Mode_AF;
+	init.GPIO_Speed = GPIO_Speed_2MHz;
+	init.GPIO_OType = GPIO_OType_PP;
+	init.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOD, &init);
+
+	/* PORTD */
+
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource0, GPIO_AF_FSMC); // D2
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource1, GPIO_AF_FSMC); // D3
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource4, GPIO_AF_FSMC); // NOE -> RD
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource5, GPIO_AF_FSMC); // NWE -> WR
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource7, GPIO_AF_FSMC); // NE1 -> CS
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource8, GPIO_AF_FSMC); // D13
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource9, GPIO_AF_FSMC); // D14
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource10, GPIO_AF_FSMC); // D15
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource11, GPIO_AF_FSMC); // A16 -> RS
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource14, GPIO_AF_FSMC); // D0
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource15, GPIO_AF_FSMC); // D1
+
+	/* PORTE */
+
+	init.GPIO_Pin = GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10
+			| GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14
+			| GPIO_Pin_15;
+	init.GPIO_Mode = GPIO_Mode_AF;
+	init.GPIO_Speed = GPIO_Speed_2MHz;
+	init.GPIO_OType = GPIO_OType_PP;
+	init.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOE, &init);
+
+	/* PORTE */
+
+	GPIO_PinAFConfig(GPIOE, GPIO_PinSource7, GPIO_AF_FSMC); // D4
+	GPIO_PinAFConfig(GPIOE, GPIO_PinSource8, GPIO_AF_FSMC); // D5
+	GPIO_PinAFConfig(GPIOE, GPIO_PinSource9, GPIO_AF_FSMC); // D6
+	GPIO_PinAFConfig(GPIOE, GPIO_PinSource10, GPIO_AF_FSMC); // D7
+	GPIO_PinAFConfig(GPIOE, GPIO_PinSource11, GPIO_AF_FSMC); // D8
+	GPIO_PinAFConfig(GPIOE, GPIO_PinSource12, GPIO_AF_FSMC); // D9
+	GPIO_PinAFConfig(GPIOE, GPIO_PinSource13, GPIO_AF_FSMC); // D10
+	GPIO_PinAFConfig(GPIOE, GPIO_PinSource14, GPIO_AF_FSMC); // D11
+	GPIO_PinAFConfig(GPIOE, GPIO_PinSource15, GPIO_AF_FSMC); // D12
+}
+
+/*
+ * Initialize NOR/SRAM Bank 1.
+ */
+static void Init_FSMC(void)
+{
+
+	FSMC_NORSRAMTimingInitTypeDef timing =
+	{ 0 };
+	FSMC_NORSRAMInitTypeDef init =
+	{ 0 };
+
+	RCC_AHB3PeriphClockCmd(RCC_AHB3Periph_FSMC, ENABLE);
+
+	timing.FSMC_AddressSetupTime = 0x01;
+	timing.FSMC_DataSetupTime = 0x09;
+	timing.FSMC_CLKDivision = 0x0;
+	timing.FSMC_AccessMode = FSMC_AccessMode_A;
+
+	/*
+	 * Data/Address MUX = Disable
+	 * Memory Type = SRAM
+	 * Data Width = 16bit
+	 * Write Operation = Enable
+	 * Extended Mode = Disable
+	 * Asynchronous Wait = Disable
+	 */
+
+	init.FSMC_Bank = FSMC_Bank1_NORSRAM1;
+	init.FSMC_DataAddressMux = FSMC_DataAddressMux_Disable;
+	init.FSMC_MemoryType = FSMC_MemoryType_SRAM;
+	init.FSMC_MemoryDataWidth = FSMC_MemoryDataWidth_16b;
+	init.FSMC_BurstAccessMode = FSMC_BurstAccessMode_Disable;
+	init.FSMC_WaitSignalPolarity = FSMC_WaitSignalPolarity_Low;
+	init.FSMC_WrapMode = FSMC_WrapMode_Disable;
+	init.FSMC_WaitSignalActive = FSMC_WaitSignalActive_BeforeWaitState;
+	init.FSMC_WriteOperation = FSMC_WriteOperation_Enable;
+	init.FSMC_WaitSignal = FSMC_WaitSignal_Disable;
+	init.FSMC_ExtendedMode = FSMC_ExtendedMode_Disable;
+	init.FSMC_WriteBurst = FSMC_WriteBurst_Disable;
+	init.FSMC_ReadWriteTimingStruct = &timing;
+	init.FSMC_WriteTimingStruct = &timing;
+	init.FSMC_AsynchronousWait = FSMC_AsynchronousWait_Disable;
+
+	FSMC_NORSRAMInit(&init);
+	FSMC_NORSRAMCmd(FSMC_Bank1_NORSRAM1, ENABLE);
+}
+
+/*
+ * Inserts a delay time.
+ * super simple implementation
+ */
+void Delay_ms(__IO uint32_t nTime)
+{
+	uint32_t TimingDelay = 0;
+
+	TimingDelay = nTime;
+	TimingDelay <<= 10;
+
+	while (TimingDelay--)
+	{
+	}
+}
