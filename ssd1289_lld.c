@@ -16,24 +16,24 @@
 /*
  * Clear the screen.
  */
-void Clear_Screen(uint16_t color)
+void tft_ClearScreen(uint16_t color)
 {
 	uint32_t i = 0;
 
-	Set_Cursor(0, 0);
+	tft_SetCursor(0, 0);
 
 	i = 0x12C00;
-	Write_GDDRAM_Prepare();
+	tft_Write_GDDRAM_Prepare();
 	while (i--)
 	{
-		Write_Data(color);
+		tft_Write_Data(color);
 	}
 }
 
 /*
  * Set Cursor to Position [x, y].
  */
-void Set_Cursor(uint16_t x, uint16_t y)
+void tft_SetCursor(uint16_t x, uint16_t y)
 {
 	/* Check if pixel position fits onto display. */
 	if (x > LCD_X_SIZE)
@@ -41,18 +41,18 @@ void Set_Cursor(uint16_t x, uint16_t y)
 	if (y > LCD_Y_SIZE)
 		y = LCD_Y_SIZE;
 
-	Write_Command_Data(0x004E, x);
-	Write_Command_Data(0x004F, y);
+	tft_Write_Command_Data(0x004E, x);
+	tft_Write_Command_Data(0x004F, y);
 }
 
 /*
  * Draw a Single Pixel on Position [x, y].
  */
-void Draw_Pixel(uint16_t x, uint16_t y, uint16_t color)
+void tft_DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 {
-	Set_Cursor(x, y);
-	Write_GDDRAM_Prepare();
-	Write_Data(color);
+	tft_SetCursor(x, y);
+	tft_Write_GDDRAM_Prepare();
+	tft_Write_Data(color);
 }
 
 /*
@@ -61,19 +61,19 @@ void Draw_Pixel(uint16_t x, uint16_t y, uint16_t color)
  * x_res, y_res - resolution in pixels.
  * *ptr_image - pointer to image array.
  */
-void Draw_Image(uint16_t x, uint16_t y, uint16_t x_res, uint16_t y_res,
+void tft_DrawImage(uint16_t x, uint16_t y, uint16_t x_res, uint16_t y_res,
 		const uint16_t *ptr_image)
 {
 	uint16_t i = 0, j = 0;
 
 	for (i = 0; i < x_res; i++)
 	{
-		Set_Cursor((x + i), y);
-		Write_GDDRAM_Prepare();
+		tft_SetCursor((x + i), y);
+		tft_Write_GDDRAM_Prepare();
 
 		for (j = 0; j < y_res; j++)
 		{
-			Write_Data(*(ptr_image++));
+			tft_Write_Data(*(ptr_image++));
 		}
 	}
 }
@@ -81,12 +81,14 @@ void Draw_Image(uint16_t x, uint16_t y, uint16_t x_res, uint16_t y_res,
 /*
  * Reset and Initialize Display.
  */
-void Init_LCD(void)
+void tft_InitLCD(void)
 {
 
+	//platform specific low level init must be implemented by user in ssd1289_port.c/.h
 	ssd1289_low_level_init();
 
-	/* Reset */CLR_RES();
+	/* Reset */
+	CLR_RES();
 	Delay_ms(30);
 	SET_RES();
 	Delay_ms(10);
@@ -94,7 +96,7 @@ void Init_LCD(void)
 #define martin
 
 #ifdef martin
-#define Write_Command Write_Command_Data
+#define Write_Command	tft_Write_Command_Data
 	Write_Command(0x0007, 0x0021);
 	Write_Command(0x0000, 0x0001);
 	Write_Command(0x0007, 0x0023);
@@ -166,14 +168,14 @@ void Init_LCD(void)
 	Write_Command_Data(0x004f, 0x0000);
 	Write_Command_Data(0x004e, 0x0000);
 #endif
-	Write_GDDRAM_Prepare();
+	tft_Write_GDDRAM_Prepare();
 
 }
 
 /*
  * Write to LCD RAM.
  */
-void Write_Command_Data(uint16_t reg, uint16_t data)
+void tft_Write_Command_Data(uint16_t reg, uint16_t data)
 {
 	ssd1289_low_level_output_address(reg);
 	ssd1289_low_level_output_data(data);
@@ -183,7 +185,7 @@ void Write_Command_Data(uint16_t reg, uint16_t data)
  * Prepares writing to GDDRAM.
  * Next coming data are directly displayed.
  */
-void Write_GDDRAM_Prepare(void)
+void tft_Write_GDDRAM_Prepare(void)
 {
 	ssd1289_low_level_output_address(GDDRAM_PREPARE);
 }
@@ -192,7 +194,7 @@ void Write_GDDRAM_Prepare(void)
  * Writes data to last selected register.
  * Used with function Write_GDDRAM_Prepare().
  */
-void Write_Data(uint16_t data)
+void tft_Write_Data(uint16_t data)
 {
 	ssd1289_low_level_output_data(data);
 }

@@ -49,7 +49,7 @@ typedef struct
 #define bit_set(x,y) (x->ODR |= y)
 #define bit_clr(x,y) (x->ODR &= ~y)
 
-//reset pin macros
+//GPIO reset ping macros
 #define CLR_RES()		bit_clr(GPIOC,GPIO_Pin_6)
 #define SET_RES()		bit_set(GPIOC,GPIO_Pin_6)
 

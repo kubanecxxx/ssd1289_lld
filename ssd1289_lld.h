@@ -52,15 +52,17 @@ extern "C"
 #define LCD_YELLOW          0xFFE0
 
 /* Public Function Prototypes *******************************************************/
-void Clear_Screen(uint16_t color);
-void Set_Cursor(uint16_t x, uint16_t y);
-void Draw_Image(uint16_t x, uint16_t y, uint16_t x_res, uint16_t y_res,const uint16_t *ptr_image);
-void Init_LCD(void);
-void Write_Command(uint16_t address, uint16_t data);
-void Write_GDDRAM_Prepare(void);
-void Write_Data(uint16_t data);
+void tft_ClearScreen(uint16_t color);
+void tft_SetCursor(uint16_t x, uint16_t y);
+void tft_DrawImage(uint16_t x, uint16_t y, uint16_t x_res, uint16_t y_res,const uint16_t *ptr_image);
+void tft_InitLCD(void);
+void tft_Write_Command(uint16_t address, uint16_t data);
+void tft_Write_GDDRAM_Prepare(void);
+void tft_Write_Data(uint16_t data);
+void tft_Write_Command_Data(uint16_t address, uint16_t data);
+
+//user should implement this function in port file
 void Delay_ms(uint32_t nTime);
-void Write_Command_Data(uint16_t address, uint16_t data);
 
 #ifdef __cplusplus
 }

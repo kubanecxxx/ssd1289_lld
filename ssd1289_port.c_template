@@ -36,7 +36,6 @@
 
 #include "ssd1289_port.h"
 
-
 static void Init_GPIO(void);
 static void Init_FSMC(void);
 
