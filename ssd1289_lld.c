@@ -8,7 +8,7 @@
 /* Includes ******************************************************************/
 
 #include "ssd1289_lld.h"
-#include "ssd1289_port.h"
+#include "port/ssd1289_port.h"
 
 /* Private Variables *********************************************************/
 /* Functions *****************************************************************/
@@ -50,9 +50,26 @@ void tft_SetCursor(uint16_t x, uint16_t y)
  */
 void tft_DrawPixel(uint16_t x, uint16_t y, uint16_t color)
 {
-	tft_SetCursor(x, y);
+	tft_SetCursor(y, LCD_Y_SIZE - x);
 	tft_Write_GDDRAM_Prepare();
 	tft_Write_Data(color);
+}
+
+void tft_DrawRectangle(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2,
+		uint16_t color)
+{
+	uint16_t i = 0, j = 0;
+
+	for (i = y1; i < y2; i++)
+	{
+		tft_SetCursor(i, LCD_Y_SIZE - x1);
+		tft_Write_GDDRAM_Prepare();
+
+		for (j = x1; j < x2; j++)
+		{
+			tft_Write_Data(color);
+		}
+	}
 }
 
 /*
@@ -87,8 +104,7 @@ void tft_InitLCD(void)
 	//platform specific low level init must be implemented by user in ssd1289_port.c/.h
 	ssd1289_low_level_init();
 
-	/* Reset */
-	CLR_RES();
+	/* Reset */CLR_RES();
 	Delay_ms(30);
 	SET_RES();
 	Delay_ms(10);
@@ -110,8 +126,7 @@ void tft_InitLCD(void)
 	 * DFM1 = 1, DFM0 = 1 => 65k Color Mode
 	 * ID0 = 1, AM = 1    => the way of automatic incrementing
 	 *                       of address counter in RAM
-	 */
-	Write_Command(0x0011, 0x6018);
+	 */Write_Command(0x0011, 0x6018);
 	Write_Command(0x0002, 0x0600); /* AC Settings */
 
 	/* Initialize other Registers */
@@ -123,8 +138,7 @@ void tft_InitLCD(void)
 	 * BGR = 1            => BGR color is assigned from S0
 	 * TB  = 1            => sets gate output sequence (see datasheet page 29)
 	 * MUX[8, 5:0]        => specify number of lines for the LCD driver
-	 */
-	Write_Command(0x0001, 0x2B3F);
+	 */Write_Command(0x0001, 0x2B3F);
 #else
 	Write_Command_Data(0x0000, 0x0001);
 	Write_Command_Data(0x0003, 0xA8A4);

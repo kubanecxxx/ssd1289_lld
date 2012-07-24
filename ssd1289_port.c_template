@@ -39,12 +39,12 @@
 static void Init_GPIO(void);
 static void Init_FSMC(void);
 
-void ssd1289_low_level_output_address(uint16_t address)
+inline void ssd1289_low_level_output_address(uint16_t address)
 {
 	LCD->Register = address;
 }
 
-void ssd1289_low_level_output_data(uint16_t data)
+inline void ssd1289_low_level_output_data(uint16_t data)
 {
 	LCD->Data = data;
 }
